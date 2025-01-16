@@ -39,6 +39,7 @@
     "@vercel/postgres": "^0.10.0",
     "ai": "4.0.36",
     "bcrypt-ts": "^5.0.2",
+    "chalk": "^5.4.1",
     "class-variance-authority": "^0.7.0",
     "classnames": "^2.5.1",
     "clsx": "^2.1.1",

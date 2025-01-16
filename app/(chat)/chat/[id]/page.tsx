@@ -7,6 +7,10 @@ import { DEFAULT_MODEL_NAME, models } from '@/lib/ai/models';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
 import { DataStreamHandler } from '@/components/data-stream-handler';
+import { createLogger } from '@/lib/utilities/logger';
+
+const logger = createLogger();
+// logger.info('Page loaded');
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -38,6 +42,8 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   const selectedModelId =
     models.find((model) => model.id === modelIdFromCookie)?.id ||
     DEFAULT_MODEL_NAME;
+
+  logger.info(`Rendering ChatPage with id: ${id}`);
 
   return (
     <>

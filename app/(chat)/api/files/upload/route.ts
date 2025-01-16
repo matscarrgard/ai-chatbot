@@ -1,8 +1,10 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-
 import { auth } from '@/app/(auth)/auth';
+import { createLogger } from '@/lib/utilities/logger';
+
+const logger = createLogger('FileUpload');
 
 // Use Blob instead of File since File is not available in Node.js environment
 const FileSchema = z.object({
@@ -21,10 +23,12 @@ export async function POST(request: Request) {
   const session = await auth();
 
   if (!session) {
+    logger.error('Unauthorized access attempt');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   if (request.body === null) {
+    logger.warn('Request body is empty');
     return new Response('Request body is empty', { status: 400 });
   }
 
@@ -33,6 +37,7 @@ export async function POST(request: Request) {
     const file = formData.get('file') as Blob;
 
     if (!file) {
+      logger.warn('No file uploaded');
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
@@ -41,12 +46,12 @@ export async function POST(request: Request) {
     if (!validatedFile.success) {
       const errorMessage = validatedFile.error.errors
         .map((error) => error.message)
-        .join(', ');
+        .join(',');
 
+      logger.warn(`File validation failed: ${errorMessage}`);
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
-    // Get filename from formData since Blob doesn't have name property
     const filename = (formData.get('file') as File).name;
     const fileBuffer = await file.arrayBuffer();
 
@@ -55,11 +60,14 @@ export async function POST(request: Request) {
         access: 'public',
       });
 
+      logger.info(`File uploaded successfully: ${filename}`);
       return NextResponse.json(data);
     } catch (error) {
+      logger.error('Upload failed', error);
       return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
   } catch (error) {
+    logger.error('Failed to process request', error);
     return NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 },

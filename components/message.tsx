@@ -20,6 +20,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 
+import { createLogger } from '@/lib/utilities/logger';
+
+const logger = createLogger();
+
 const PurePreviewMessage = ({
   chatId,
   message,

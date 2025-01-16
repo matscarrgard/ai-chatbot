@@ -33,6 +33,9 @@ import {
 } from '@/lib/utils';
 
 import { generateTitleFromUserMessage } from '../../actions';
+import { createLogger } from '@/lib/utilities/logger';
+
+const logger = createLogger('ChatRoute');
 
 export const maxDuration = 60;
 
@@ -63,12 +66,14 @@ export async function POST(request: Request) {
   const session = await auth();
 
   if (!session || !session.user || !session.user.id) {
+    logger.error('Unauthorized access attempt');
     return new Response('Unauthorized', { status: 401 });
   }
 
   const model = models.find((model) => model.id === modelId);
 
   if (!model) {
+    logger.warn('Model not found');
     return new Response('Model not found', { status: 404 });
   }
 
@@ -76,6 +81,7 @@ export async function POST(request: Request) {
   const userMessage = getMostRecentUserMessage(coreMessages);
 
   if (!userMessage) {
+    logger.warn('No user message found');
     return new Response('No user message found', { status: 400 });
   }
 
@@ -84,6 +90,7 @@ export async function POST(request: Request) {
   if (!chat) {
     const title = await generateTitleFromUserMessage({ message: userMessage });
     await saveChat({ id, userId: session.user.id, title });
+    logger.info(`Chat created with ID: ${id}`);
   }
 
   const userMessageId = generateUUID();
@@ -93,6 +100,8 @@ export async function POST(request: Request) {
       { ...userMessage, id: userMessageId, createdAt: new Date(), chatId: id },
     ],
   });
+
+  logger.info(`User message saved with ID: ${userMessageId}`);
 
   return createDataStreamResponse({
     execute: (dataStream) => {
@@ -488,12 +497,14 @@ export async function DELETE(request: Request) {
   const id = searchParams.get('id');
 
   if (!id) {
+    logger.warn('Chat ID not found in DELETE request');
     return new Response('Not Found', { status: 404 });
   }
 
   const session = await auth();
 
   if (!session || !session.user) {
+    logger.error('Unauthorized access attempt to delete chat');
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -501,13 +512,16 @@ export async function DELETE(request: Request) {
     const chat = await getChatById({ id });
 
     if (chat.userId !== session.user.id) {
+      logger.error('Unauthorized deletion attempt');
       return new Response('Unauthorized', { status: 401 });
     }
 
     await deleteChatById({ id });
+    logger.info(`Chat deleted with ID: ${id}`);
 
     return new Response('Chat deleted', { status: 200 });
   } catch (error) {
+    logger.error('An error occurred while processing DELETE request', error);
     return new Response('An error occurred while processing your request', {
       status: 500,
     });
